@@ -110,7 +110,7 @@ kr2 = AnalyticalEOR.RelPerms(
                             sor= sor,
                             krw0= krw0,
                             kro0= kro0,
-                            nw= nw,
+                            nw= nw,widemul
                             no= no,
                                 )
 

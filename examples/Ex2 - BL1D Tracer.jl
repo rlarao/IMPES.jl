@@ -1,5 +1,7 @@
-using Plots, LinearAlgebra, IMPES
+using Plots, IMPES
 using AnalyticalEOR
+using ForwardDiff:derivative
+using DiffEqOperators
 
 
 swr=0.2
@@ -85,8 +87,11 @@ post = PostProcessing(
 
 t = 0
 i = 0
-while t < tmax
+# while t < tmax
     IMPES!(sim, res, fluid, grid, bc, wells)
+
+
+    sim.p
 
     #* Save results
     t += sim.dt
@@ -95,7 +100,23 @@ while t < tmax
     post.p[:,i] = sim.p
     post.s[:,i] = sim.s
     post.t[i] = t
-end
+# end
+
+∇ = CenteredDifference(1, 2, grid.dx, length(grid.x))
+∇u = UpwindDifference(1, 1, grid.dx, length(grid.x), -1)
+∇² = CenteredDifference(2, 2, grid.dx, length(grid.x))
+
+qinj = 426.5 # ft3 /s
+k = 100 # md
+A = res.h * res.W # ft2
+dp0 = - qinj / krw0 / k / A   / 6894757 / 1.06e-14
+pb = 100.0
+# / k / A
+
+pbc = RobinBC((0.0, 1.0, dp0), (1.0, 0.0, pb), grid.dx)
+
+
+
 
 
 
