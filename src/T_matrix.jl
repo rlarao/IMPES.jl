@@ -1,6 +1,5 @@
 function Thalf(l::Int64, m::Int64, res::Reservoir, fluid::Fluids, grid::Grid, sim::Simulation)
     Nx = grid.Nx
-    Ny = grid.Ny
     Δx = grid.dx
     Δy = grid.dy
     k = res.k
@@ -45,7 +44,7 @@ function Thalf(l::Int64, m::Int64, res::Reservoir, fluid::Fluids, grid::Grid, si
         To = -  k * Δx * h / (μo * Δy) * kro
     end
 
-    return Tw * 6.33e-3, To * 6.33e-3
+    return Tw * 10^(-2.19869967), To * 10^(-2.19869967)
 end
 
 
@@ -54,8 +53,8 @@ function T_matrix(res::Reservoir, fluid::Fluids, grid::Grid, sim::Simulation, bc
     Ny = grid.Ny
     
     # Initialize transmissibilities matrices
-    Tw = zeros(Nx*Ny, Nx*Ny)
-    To = zeros(Nx*Ny, Nx*Ny)
+    Tw = spzeros(Nx*Ny, Nx*Ny)
+    To = spzeros(Nx*Ny, Nx*Ny)
 
     for l in 1:Nx*Ny
         #* Left
@@ -103,8 +102,9 @@ function T_matrix(res::Reservoir, fluid::Fluids, grid::Grid, sim::Simulation, bc
         end
     end
 
-    T = -(sim.d12 \ sim.d22)* Tw + To
+    # T = -(sim.d12 \ sim.d22)* Tw + To
+    T = Tw + To
 
-    return T, Tw, To 
+    return T, Tw 
 end
 
