@@ -1,35 +1,36 @@
-function IMPES!(sim::Simulation, res::Reservoir, fluid::Fluids, grid::Grid,
+function IMPES!(sim::Simulation, res::Reservoir, kr::RelPerms, fluid::Fluids, grid::Grid,
                 bc::BoundaryConditions, post::FlowResults)
 
     # Define flow functions
-    krw(s) = water_rel_perm(s, res.kr)
-    kro(s) = oil_rel_perm(s, res.kr)
+    # krw(s) = water_rel_perm(s, res.kr)
+    # kro(s) = oil_rel_perm(s, res.kr)
     
-    λw(s) = krw(s) / fluid.μw
-    λo(s) = kro(s) / fluid.μo
-    λ(s) = λo(s) + λw(s)
+    # λw(s) = krw(s) / fluid.μw
+    # λo(s) = kro(s) / fluid.μo
+    # λ(s) = λo(s) + λw(s)
     
-    fw(s) = λw(s) ./ (λw(s) .+ λo(s))
+    # fw(s) = λw(s) ./ (λw(s) .+ λo(s))
 
     # Get data
     n = grid.Nx
-    h = res.h
-    W = res.W
+    A = res.A
     k = res.k
     ϕ = res.phi
     Δx = grid.dx
     Δt = sim.dt
     s = sim.s
+    θ = sim.θ
 
     # Initialize velocity vectors
     v = zeros(n+1)
-    v[1] = bc.value[1] / h / W
+    v[1] = bc.value[1] / A
     
     ∇v = zeros(n)  
 
     # Calculate all mobilities
-    Λw = λw(s)
-    Λo = λo(s)
+    krw, kro = kr(s, θ)
+    Λw = krw ./ fluid.μw
+    Λo = kro ./ fluid.μo
     Λ = Λw + Λo
 
 
@@ -41,17 +42,17 @@ function IMPES!(sim::Simulation, res::Reservoir, fluid::Fluids, grid::Grid,
         T[i,i] = - (T[i, i-1] + T[i,i+1])
     end
 
-    # Left - Dirichlet
+    # Left - Neumann
     T[1,1] = -Λ[1]
     T[1,2] = Λ[1]
-    # Right - Neumann
+    # Right - Dirichlet
     T[n,n] = - 9*Λ[n] - 3*Λ[n-1]
     T[n,n-1] = 3*Λ[n-1] + Λ[n]
     
     ## Get Q vector
     Q = zeros(n)
     # Left - Neumann
-    Q[1] = - bc.value[1] / h / W / k * Δx
+    Q[1] = - bc.value[1] / A / k * Δx
     # Right - Dirichlet
     Q[n] = -8 * (Λw[n] + Λo[n]) * bc.value[2] 
 
@@ -77,6 +78,7 @@ function IMPES!(sim::Simulation, res::Reservoir, fluid::Fluids, grid::Grid,
     # Save Results
     post.p[:,sim.i] = p
     post.s[:,sim.i] = s
+    post.θ[:,sim.i] = θ
 
 end
 
@@ -94,16 +96,16 @@ function IMPEC!(ctrans::CompTransport, sim, res, grid, post)
     ncomps = ctrans.ncomps
 
     for j in 1:ncomps
-        c = ctrans.c[j,:,i-1]
+        c = ctrans.c[:,j,i-1]
 
-        cinj = 1
+        cinj = ctrans.cinj[j]
         ∇cuw  = zeros(n)
         ∇cuw[2:n] = [c[l] * v[l+1] - c[l-1] * v[l]  for l in 2:n] / Δx
         ∇cuw[1] = (c[1] * v[2] - cinj * v[1])  / Δx
 
         c = c  .- Δt * ∇cuw / ϕ ./ s - c .* Δs ./ s
 
-        ctrans.c[j,:,i] = c
+        ctrans.c[:,j,i] = c
     end
 
 end
