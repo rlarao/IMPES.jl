@@ -1,17 +1,18 @@
 module IMPES
 
-# Write your package code here.
+using LinearAlgebra, SparseArrays
+
 include("types.jl")
 include("flowFunctions.jl")
+include("solvers.jl")
+include("utilities.jl")
 include("T_matrix.jl")
-include("D_matrix.jl")
-include("Q_vector.jl")
 
-
-export RelPerms, Reservoir, Fluids, Grid, BoundaryConditions,
-       Wells, Simulation
-
-export D_matrix, T_matrix, Q_matrix
+export RelPerms, SingleRelPerms, MixedRelPerms, Reservoir, Fluids, Grid, BoundaryConditions
+export Simulation, FlowResults
 export IMPES!
-
+export CompTransport, IMPEC!
+export recoveryFactor, injPoreVolumes, T_matrix
 end
+
+

@@ -1,35 +1,27 @@
-using Revise
+# using Revise
 using IMPES
-using Plots
-
+using JPhreeqc
 # using Plots, LinearAlgebra, IMPES
 # using AnalyticalEOR
 
 #* Define Relative Perms
-kr_ww = SingleRelPerms(
-        swr= 0.11,
-        sor= 0.10,
-        krw0= 0.2,
-        kro0= 0.8,
-        nw= 3.0,
-        no= 2.0,
-            )
-
-kr_ow = SingleRelPerms(
-        swr= 0.11,
-        sor= 0.16,
-        krw0= 0.4,
-        kro0= 0.5,
+kr = RelPerms(
+        swr= 0.2,
+        sor= 0.2,
+        krw0= 0.3,
+        kro0= 1.0,
         nw= 2.0,
         no= 3.0,
-        )
+            )
 
 #* Define reservoir
 res = Reservoir(
     L = 300.,
-    A = 200 * 50 * 0.3048^2,
+    W = 200.0 * 0.3048,
+    h = 50.0 * 0.3048,
     k = 100.0 * 9.869233e-16,
     phi = 0.2,
+    kr = kr,
     )
 
 #* Define fluids
@@ -57,7 +49,6 @@ dt = 1. * 3600 * 24
 sim = Simulation(
                 1000*ones(grid.Nx)* 6894.76,
                 0.2*ones(grid.Nx),
-                1*ones(grid.Nx),
                 tmax,
                 dt
 )
@@ -65,14 +56,29 @@ sim = Simulation(
 post = FlowResults(sim, grid, tmax, dt)
 
 
+ncomps = 2
+cinj = ones(ncomps) * 1.
+ci = zeros(ncomps, grid.Nx)
+ntimes = ceil(Int64, sim.tmax / sim.dt)
+c = zeros(ncomps, grid.Nx, ntimes+1)
+c[:,:, 1] = ci
+ctrans = CompTransport(c, ncomps, cinj)
+
+
+
+
 while sim.t < tmax
-    IMPES!(sim, res, kr_ww, fluid, grid, bc, post)
+    IMPES!(sim, res, fluid, grid, bc, post)
+    IMPEC!(ctrans, sim, res, grid, post)
 end
 
 
+using Plots
+
 i = 1000
 plot(grid.x, post.s[:,i], seriestype=:scatter)
-plot(grid.x, post.p[:,i], seriestype=:scatter)
+plot(grid.x, ctrans.c[1,:,i], seriestype=:scatter)
+plot!(grid.x, ctrans.c[2,:,i], seriestype=:scatter)
 
 
 
