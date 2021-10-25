@@ -38,7 +38,8 @@ struct Block <: Reservoir
     L   ::Float64
     W   ::Float64
     h   ::Float64
-    V   ::Float64        
+    A   ::Float64        
+    V   ::Float64
     k   ::Float64
     phi ::Float64
 end
@@ -51,7 +52,8 @@ end
 
 function Reservoir(L::Float64, W::Float64, h::Float64, k::Float64, phi::Float64)
     V = L * W * h
-    Block(L, W, h, V, k, phi)
+    A = W * h
+    Block(L, W, h, A, V, k, phi)
 end
 
 #* Fluid
